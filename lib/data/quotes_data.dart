@@ -6,8 +6,8 @@ class QuotesData {
     'Believe in yourself and all that you are.',
     'You are braver than you believe, stronger than you seem, and smarter than you think.',
     'The only impossible journey is the one you never begin.',
-    'A goal without a plan is just a wish.'
-        "Never be limited by other people's limited imaginations.",
+    'A goal without a plan is just a wish.',
+    "Never be limited by other people's limited imaginations.",
     'If you are going through hell, keep going.',
     'You must do the thing you think you cannot do',
     "Don't watch the clock; do what it does. Keep going.",

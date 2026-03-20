@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:daily_spark/core/constants/strings.dart';
 import 'package:daily_spark/features/home/widgets/change_quote_btn.dart';
+import 'package:daily_spark/features/home/widgets/save_share_btn.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_spark/data/quotes_data.dart';
 import 'dart:ui';
@@ -21,6 +22,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int previousImgIndex = 0 ;
   double opacity = 1.0;
 
+  List<String> savedQuotes = [];
+  bool get isCurrentQuoteSaved => savedQuotes.contains(QuotesData().quotesList[currentQuoteIndex]);
+
   void changeIndex(){
     Random random = Random();
     var newIndex = random.nextInt(quotesData.quotesList.length);
@@ -38,6 +42,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       });
     });
 
+  }
+
+  void toggleSaveQuote(){
+    var currentQuote = QuotesData().quotesList[currentQuoteIndex];
+    setState(() {
+      if(savedQuotes.contains(currentQuote)){
+        savedQuotes.remove(currentQuote);
+      } else {
+        savedQuotes.add(currentQuote);
+      }
+    });
   }
   @override
   Widget build(BuildContext context) {
@@ -135,6 +150,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   ),
                 ),
               ),
+              //SizedBox(height: 24,),
+              SaveShareBtn(isSaved: isCurrentQuoteSaved, saveQuote: toggleSaveQuote,shareQuote: (){},),
               SizedBox(height: 24,),
               ChangeQuoteBtn(onPressed: changeIndex),
               SizedBox(height: 20,)
