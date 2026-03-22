@@ -1,10 +1,13 @@
 import 'dart:math';
 import 'package:daily_spark/core/constants/strings.dart';
+import 'package:daily_spark/features/save_quotes/screens/saved_quotes_screen.dart';
 import 'package:daily_spark/features/home/widgets/change_quote_btn.dart';
 import 'package:daily_spark/features/home/widgets/save_share_btn.dart';
 import 'package:flutter/material.dart';
 import 'package:daily_spark/data/quotes_data.dart';
 import 'dart:ui';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -21,9 +24,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   int currentImgIndex = 0 ;
   int previousImgIndex = 0 ;
   double opacity = 1.0;
+  static const String savedQuotesKey = 'saved_quotes';
 
   List<String> savedQuotes = [];
-  bool get isCurrentQuoteSaved => savedQuotes.contains(QuotesData().quotesList[currentQuoteIndex]);
+  bool get isCurrentQuoteSaved => savedQuotes.contains(quotesData.quotesList[currentQuoteIndex]);
+
+  @override
+  void initState() {
+    super.initState();
+    loadSavedQuotes();
+  }
+
+  Future<void> removeQuote(String quote) async {
+    setState(() {
+      savedQuotes.remove(quote);
+    });
+    await persistSavedQuotes();
+  }
+
+  Future<void> loadSavedQuotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    final quotes = prefs.getStringList(savedQuotesKey) ?? [];
+
+    debugPrint('Loaded quotes :$quotes');
+
+    setState(() {
+      savedQuotes = quotes;
+    });
+  }
+
+  Future<void> persistSavedQuotes() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(savedQuotesKey, savedQuotes);
+
+    debugPrint('Saved Quotes: $savedQuotes');
+  }
 
   void changeIndex(){
     Random random = Random();
@@ -44,8 +79,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   }
 
-  void toggleSaveQuote(){
-    var currentQuote = QuotesData().quotesList[currentQuoteIndex];
+  void shareCurrentQuote(){
+    var currentQuote = quotesData.quotesList[currentQuoteIndex];
+    SharePlus.instance.share(
+      ShareParams(
+        text: '$currentQuote\n\n-- ${AppStrings.appBarTitle}',
+      )
+    );
+  }
+
+  Future<void> toggleSaveQuote()async{
+    var currentQuote = quotesData.quotesList[currentQuoteIndex];
     setState(() {
       if(savedQuotes.contains(currentQuote)){
         savedQuotes.remove(currentQuote);
@@ -53,6 +97,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         savedQuotes.add(currentQuote);
       }
     });
+    await persistSavedQuotes();
   }
   @override
   Widget build(BuildContext context) {
@@ -60,7 +105,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       body: Stack(
         children: [
           Image.asset(
-            QuotesData().quotesImages[previousImgIndex],
+            quotesData.quotesImages[previousImgIndex],
             fit: BoxFit.cover,
             width: double.infinity,
             height: double.infinity,
@@ -91,7 +136,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     size: 28,),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),),
-                  )
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SavedQuotesScreen(
+                            savedQuotes: savedQuotes,
+                            onDelete: removeQuote,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(
+                      Icons.bookmark_outline,
+                      color: Colors.white,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 60,),
@@ -137,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                                 return FadeTransition(opacity: animation,child: child,);
                               },
                               child: Text(
-                                QuotesData().quotesList[currentQuoteIndex],
+                                quotesData.quotesList[currentQuoteIndex],
                                 key: ValueKey(currentQuoteIndex),
                                 textAlign: TextAlign.center,
                                 style: Theme.of(context).textTheme.bodyLarge,
@@ -151,7 +213,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
               //SizedBox(height: 24,),
-              SaveShareBtn(isSaved: isCurrentQuoteSaved, saveQuote: toggleSaveQuote,shareQuote: (){},),
+              SaveShareBtn(isSaved: isCurrentQuoteSaved, saveQuote: toggleSaveQuote,shareQuote: shareCurrentQuote,),
               SizedBox(height: 24,),
               ChangeQuoteBtn(onPressed: changeIndex),
               SizedBox(height: 20,)
